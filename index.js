@@ -18,7 +18,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-app.post("/send-welcome-email", async (req, res) => {
+app.post("/nordic-solar//send-welcome-email", async (req, res) => {
   try {
     const { to, subject, name, email, password, action_url } = req.body;
 
