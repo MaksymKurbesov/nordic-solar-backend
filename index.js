@@ -13,8 +13,8 @@ app.use(bodyParser.urlencoded({ extended: true }));
 const transporter = nodemailer.createTransport({
   service: "gmail", // Gmail используется как SMTP-сервис
   auth: {
-    user: "support@apatecyprusestate.com", // Ваш email
-    pass: "hyhx harv imyi mxun", // Сгенерированный пароль приложения
+    user: "support@nordic-solar.tech", // Ваш email
+    pass: "iere lteg dhew kmmq", // Сгенерированный пароль приложения
   },
 });
 
