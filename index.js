@@ -3,12 +3,14 @@ const fs = require("fs");
 const mustache = require("mustache");
 const express = require("express");
 const bodyParser = require("body-parser");
+const cors = require('cors');
 
 const app = express();
 const PORT = 3000;
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(cors());
 
 const transporter = nodemailer.createTransport({
   service: "gmail", // Gmail используется как SMTP-сервис
