@@ -8,6 +8,7 @@ import { initializeApp } from "firebase-admin/app";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { getAuth } from "firebase-admin/auth";
 import geoip from "geoip-lite";
+import cors from "cors";
 
 const app = express();
 const PORT = 3000;
@@ -17,6 +18,7 @@ const db = getFirestore();
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(cors());
 
 const detector = new DeviceDetector({
   clientIndexes: true,
@@ -27,8 +29,8 @@ const detector = new DeviceDetector({
 const transporter = nodemailer.createTransport({
   service: "gmail", // Gmail используется как SMTP-сервис
   auth: {
-    user: "support@apatecyprusestate.com", // Ваш email
-    pass: "hyhx harv imyi mxun", // Сгенерированный пароль приложения
+    user: "support@nordic-solar.tech", // Ваш email
+    pass: "iere lteg dhew kmmq", // Сгенерированный пароль приложения
   },
 });
 
