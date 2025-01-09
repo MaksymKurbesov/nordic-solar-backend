@@ -3,17 +3,23 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js",
+    "start": "cross-env GOOGLE_APPLICATION_CREDENTIALS=./credentials.json nodemon index.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "body-parser": "^1.20.3",
+    "cross-env": "^7.0.3",
     "express": "^4.21.2",
+    "firebase-admin": "^13.0.2",
+    "geoip-lite": "^1.4.10",
     "mustache": "^4.2.0",
+    "node-device-detector": "^2.1.6",
     "nodemailer": "^6.9.16",
     "nodemon": "^3.1.7"
   }
