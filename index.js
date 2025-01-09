@@ -39,10 +39,8 @@ app.post("/ip", async (req, res) => {
     const { username } = req.body;
     const userDoc = await db.collection("users").doc(username);
     const userSnap = await userDoc.get();
-    // const userAgent = req.useragent;
     const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
     const parsedIP = ip.replace("::ffff:", "");
-    // const result = detector.detect(userAgent?.source);
 
     if (userSnap.exists) {
       const userData = await userSnap.data();
@@ -60,9 +58,10 @@ app.post("/ip", async (req, res) => {
         await userDoc.update({
           backendInfo: FieldValue.arrayUnion({
             ip: parsedIP,
-            country: geoByIp.country,
-            city: geoByIp.city,
-            // ...result,
+            geo: {
+              country: geoByIp.country,
+              city: geoByIp.city,
+            },
           }),
         });
       } else {
@@ -70,8 +69,10 @@ app.post("/ip", async (req, res) => {
           backendInfo: [
             {
               ip: parsedIP,
-              geo: geoByIp,
-              // ...result,
+              geo: {
+                country: geoByIp.country,
+                city: geoByIp.city,
+              },
             },
           ],
         });
