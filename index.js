@@ -1,132 +1,42 @@
 import nodemailer from "nodemailer";
-import fs from "fs";
-import mustache from "mustache";
 import express from "express";
 import bodyParser from "body-parser";
-import DeviceDetector from "node-device-detector";
 import { initializeApp } from "firebase-admin/app";
-import { getFirestore, FieldValue } from "firebase-admin/firestore";
+import { getFirestore } from "firebase-admin/firestore";
 import { getAuth } from "firebase-admin/auth";
-import geoip from "geoip-lite";
+import dotenv from "dotenv";
+dotenv.config();
 import cors from "cors";
+import depositRouter from "./routers/DepositRouter.js";
+import userRouter from "./routers/UserRouter.js";
+import authRouter from "./routers/AuthRouter.js";
+import cookieParser from "cookie-parser";
 
 const app = express();
-const PORT = 3000;
+const PORT = 3010;
+export const JWT_SECRET = "your_secret_key";
 
-const firestoreApp = initializeApp();
-const db = getFirestore();
+initializeApp();
+export const db = getFirestore();
+export const auth = getAuth();
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors());
+app.use(cookieParser());
 
-const detector = new DeviceDetector({
-  clientIndexes: true,
-  deviceIndexes: true,
-  deviceAliasCode: false,
-});
+app.use("/deposits", depositRouter);
+app.use("/user", userRouter);
+app.use("/auth", authRouter);
 
-const transporter = nodemailer.createTransport({
-  service: "gmail", // Gmail используется как SMTP-сервис
+export const transporter = nodemailer.createTransport({
+  service: "gmail",
   auth: {
-    user: "support@nordic-solar.tech", // Ваш email
-    pass: "iere lteg dhew kmmq", // Сгенерированный пароль приложения
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_PASS,
   },
-});
-
-app.post("/ip", async (req, res) => {
-  try {
-    const { username } = req.body;
-    const userDoc = await db.collection("users").doc(username);
-    const userSnap = await userDoc.get();
-    const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
-    const parsedIP = ip.replace("::ffff:", "");
-
-    if (userSnap.exists) {
-      const userData = await userSnap.data();
-      const geoByIp = geoip.lookup(parsedIP);
-      const userBackendInfo = userData.backendInfo;
-
-      if (userBackendInfo) {
-        const userHasIp = userBackendInfo.some((info) => info.ip === parsedIP);
-
-        if (userHasIp) {
-          res.send("the user has already logged in from this IP address");
-          return;
-        }
-
-        await userDoc.update({
-          backendInfo: FieldValue.arrayUnion({
-            ip: parsedIP,
-            geo: {
-              country: geoByIp.country,
-              city: geoByIp.city,
-            },
-          }),
-        });
-      } else {
-        await userDoc.update({
-          backendInfo: [
-            {
-              ip: parsedIP,
-              geo: {
-                country: geoByIp.country,
-                city: geoByIp.city,
-              },
-            },
-          ],
-        });
-      }
-    }
-
-    res.send(ip);
-  } catch (e) {
-    console.log(e, "error");
-  }
-});
-
-app.post("/send-welcome-email", async (req, res) => {
-  try {
-    const { to, subject, name, email, password, action_url } = req.body;
-
-    const templateData = {
-      name,
-      email,
-      password,
-      action_url,
-    };
-
-    const welcomeEmail = loadTemplate("./templates/welcome.html", templateData);
-
-    const mailOptions = {
-      to,
-      subject,
-      text: "Ваше устройство не поддерживает HTML",
-      html: welcomeEmail,
-    };
-
-    const info = await transporter.sendMail(mailOptions, (error, info) => {
-      if (error) {
-        console.error("Ошибка при отправке:", error);
-      } else {
-        console.log("Письмо успешно отправлено:", info.response);
-      }
-    });
-
-    res.status(200).json({ message: "Письмо отправлено успешно!", info });
-  } catch (error) {
-    console.error("Ошибка при отправке письма:", error);
-    res
-      .status(500)
-      .json({ error: "Ошибка при отправке письма", details: error.message });
-  }
 });
 
 app.listen(PORT, () => {
   console.log(`Сервер запущен на http://localhost:${PORT}`);
 });
-
-function loadTemplate(filePath, data) {
-  const template = fs.readFileSync(filePath, "utf8"); // Читаем файл
-  return mustache.render(template, data); // Заменяем переменные
-}

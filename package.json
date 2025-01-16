@@ -14,14 +14,17 @@
   "license": "ISC",
   "dependencies": {
     "body-parser": "^1.20.3",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "cross-env": "^7.0.3",
+    "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "firebase-admin": "^13.0.2",
     "geoip-lite": "^1.4.10",
+    "jsonwebtoken": "^9.0.2",
     "mustache": "^4.2.0",
-    "node-device-detector": "^2.1.6",
     "nodemailer": "^6.9.16",
-    "nodemon": "^3.1.7"
+    "nodemon": "^3.1.7",
+    "uuid": "^11.0.5"
   }
 }
