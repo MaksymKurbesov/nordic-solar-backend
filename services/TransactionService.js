@@ -22,6 +22,22 @@ class TransactionService {
       console.log(e, "error");
     }
   }
+
+  async confirmTransaction(id) {
+    const transactionDoc = await db.collection("transactions").doc(id);
+
+    await transactionDoc.update({
+      status: "Выполнено",
+    });
+  }
+
+  async declineTransaction(id) {
+    const transactionDoc = await db.collection("transactions").doc(id);
+
+    await transactionDoc.update({
+      status: "Отмена",
+    });
+  }
 }
 
 export default new TransactionService();

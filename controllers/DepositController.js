@@ -23,6 +23,16 @@ class DepositController {
       res.status(500).json(e);
     }
   }
+
+  async getDeposits(req, res) {
+    try {
+      const deposits = await DepositService.getDeposits(req.body.nickname);
+
+      res.json(deposits);
+    } catch (e) {
+      res.status(500).json(e);
+    }
+  }
 }
 
 export default new DepositController();

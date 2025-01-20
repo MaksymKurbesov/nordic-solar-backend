@@ -11,6 +11,7 @@ import depositRouter from "./routers/DepositRouter.js";
 import userRouter from "./routers/UserRouter.js";
 import authRouter from "./routers/AuthRouter.js";
 import cookieParser from "cookie-parser";
+import transactionRouter from "./routers/TransactionRouter.js";
 
 const app = express();
 const PORT = 3010;
@@ -28,6 +29,7 @@ app.use(cookieParser());
 app.use("/deposits", depositRouter);
 app.use("/user", userRouter);
 app.use("/auth", authRouter);
+app.use("/transaction", transactionRouter);
 
 export const transporter = nodemailer.createTransport({
   service: "gmail",

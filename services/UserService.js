@@ -1,6 +1,7 @@
 import { db } from "../index.js";
 import { FieldValue } from "firebase-admin/firestore";
-import { generateUserData } from "../helpers.js";
+import { generateUserData, REFERRAL_REWARDS_BY_LEVEL } from "../helpers.js";
+import TransactionService from "./TransactionService.js";
 
 class UserService {
   async addUser(userData) {
@@ -16,9 +17,9 @@ class UserService {
     return userDoc.data();
   }
 
-  async updateBalanceAfterOpenDeposit(username, wallet, amount) {
+  async updateBalanceAfterOpenDeposit(nickname, wallet, amount) {
     try {
-      const userRef = db.collection("users").doc(username);
+      const userRef = db.collection("users").doc(nickname);
 
       await userRef.update({
         [`wallets.${wallet}.available`]: FieldValue.increment(-amount),
@@ -29,9 +30,34 @@ class UserService {
     }
   }
 
-  async getUserReferrals(username) {
+  async addMoneyToBalance(nickname, wallet, amount) {
     try {
-      const userDocRef = db.collection("users").doc(username);
+      const userRef = db.collection("users").doc(nickname);
+      await userRef.update({
+        [`wallets.${wallet}.available`]: FieldValue.increment(amount),
+        [`wallets.${wallet}.deposited`]: FieldValue.increment(amount),
+      });
+    } catch (error) {
+      throw new Error("Failed to add money on user balance.");
+    }
+  }
+
+  async deductMoneyFromBalance(nickname, wallet, amount) {
+    try {
+      const userRef = db.collection("users").doc(nickname);
+      await userRef.update({
+        [`wallets.${wallet}.available`]: FieldValue.increment(-amount),
+        [`wallets.${wallet}.withdrawn`]: FieldValue.increment(amount),
+        withdrawn: FieldValue.increment(amount),
+      });
+    } catch (error) {
+      throw new Error("Failed to add money on user balance.");
+    }
+  }
+
+  async getUserReferrals(nickname) {
+    try {
+      const userDocRef = db.collection("users").doc(nickname);
       const userDocSnapshot = await userDocRef.get();
 
       if (!userDocSnapshot.exists) {
@@ -75,6 +101,55 @@ class UserService {
     } catch (error) {
       console.error("Ошибка получения данных рефералов:", error);
       return null;
+    }
+  }
+
+  async addReferralRewards(nickname, wallet, amount) {
+    const referralLength = 4;
+    let currentReferralLevel = 1;
+
+    const addReward = async (referredBy, amount, wallet) => {
+      if (!referredBy || currentReferralLevel > referralLength) return;
+
+      const referredByDoc = db.collection("users").doc(referredBy);
+      const referredBySnap = await referredByDoc.get();
+
+      if (!referredBySnap.exists) return;
+
+      const referralReward =
+        (amount / 100) * REFERRAL_REWARDS_BY_LEVEL[currentReferralLevel];
+
+      await referredByDoc.update({
+        referrals: FieldValue.increment(referralReward),
+        [`wallets.${wallet}.referrals`]: FieldValue.increment(referralReward),
+        [`wallets.${wallet}.available`]: FieldValue.increment(referralReward),
+      });
+
+      const transactionData = {
+        amount: referralReward,
+        executor: nickname,
+        nickname: referredBySnap.data().nickname,
+        status: "Выполнено",
+        type: "Реферальные",
+      };
+
+      await TransactionService.addTransaction(transactionData);
+
+      currentReferralLevel++;
+
+      await addReward(referredBySnap.data().referredBy, amount, wallet);
+    };
+
+    try {
+      const userRef = db.collection("users").doc(nickname);
+      const userSnap = await userRef.get();
+
+      if (!userSnap.exists) return;
+
+      const userData = userSnap.data();
+      await addReward(userData.referredBy, amount, wallet);
+    } catch (error) {
+      console.error("Error adding referral rewards:", error);
     }
   }
 
