@@ -1,67 +1,45 @@
-const nodemailer = require("nodemailer");
-const fs = require("fs");
-const mustache = require("mustache");
-const express = require("express");
-const bodyParser = require("body-parser");
-const cors = require('cors');
+import nodemailer from "nodemailer";
+import express from "express";
+import bodyParser from "body-parser";
+import { initializeApp } from "firebase-admin/app";
+import { getFirestore } from "firebase-admin/firestore";
+import { getAuth } from "firebase-admin/auth";
+import dotenv from "dotenv";
+dotenv.config();
+import cors from "cors";
+import depositRouter from "./routers/DepositRouter.js";
+import userRouter from "./routers/UserRouter.js";
+import authRouter from "./routers/AuthRouter.js";
+import cookieParser from "cookie-parser";
+import transactionRouter from "./routers/TransactionRouter.js";
 
 const app = express();
-const PORT = 3000;
+const PORT = 3010;
+export const JWT_SECRET = "your_secret_key";
+
+initializeApp();
+export const db = getFirestore();
+export const auth = getAuth();
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors());
+app.use(cookieParser());
 
-const transporter = nodemailer.createTransport({
-  service: "gmail", // Gmail используется как SMTP-сервис
+
+app.use("/deposits", depositRouter);
+app.use("/user", userRouter);
+app.use("/auth", authRouter);
+app.use("/transaction", transactionRouter);
+
+export const transporter = nodemailer.createTransport({
+  service: "gmail",
   auth: {
-    user: "support@nordic-solar.tech", // Ваш email
-    pass: "iere lteg dhew kmmq", // Сгенерированный пароль приложения
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_PASS,
   },
-});
-
-app.post("/send-welcome-email", async (req, res) => {
-  try {
-    const { to, subject, name, email, password, action_url } = req.body;
-
-    const templateData = {
-      name,
-      email,
-      password,
-      action_url,
-    };
-
-    const welcomeEmail = loadTemplate("./templates/welcome.html", templateData);
-
-    const mailOptions = {
-      to,
-      subject,
-      text: "Ваше устройство не поддерживает HTML",
-      html: welcomeEmail,
-    };
-
-    const info = await transporter.sendMail(mailOptions, (error, info) => {
-      if (error) {
-        console.error("Ошибка при отправке:", error);
-      } else {
-        console.log("Письмо успешно отправлено:", info.response);
-      }
-    });
-
-    res.status(200).json({ message: "Письмо отправлено успешно!", info });
-  } catch (error) {
-    console.error("Ошибка при отправке письма:", error);
-    res
-      .status(500)
-      .json({ error: "Ошибка при отправке письма", details: error.message });
-  }
 });
 
 app.listen(PORT, () => {
   console.log(`Сервер запущен на http://localhost:${PORT}`);
 });
-
-function loadTemplate(filePath, data) {
-  const template = fs.readFileSync(filePath, "utf8"); // Читаем файл
-  return mustache.render(template, data); // Заменяем переменные
-}
