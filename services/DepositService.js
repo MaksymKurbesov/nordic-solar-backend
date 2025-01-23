@@ -39,9 +39,14 @@ class DepositService {
     const userDoc = await db.collection("users").doc(nickname);
     const depositsDoc = userDoc.collection("deposits").where("isActive", "==", true);
 
+    const everydayDeposits = userDoc
+      .collection("deposits")
+      .where("isActive", "==", true)
+      .where("accruals", "!=", "one_time");
+
     try {
       await db.runTransaction(async (t) => {
-        const docs = await t.get(depositsDoc);
+        const docs = await t.get(everydayDeposits);
         docs.forEach((doc) => {
           const depositData = doc.data();
           const { amount, plan, variant, lastAccrual, days, charges, wallet } = depositData;
@@ -50,24 +55,26 @@ class DepositService {
 
           const updatedLastAccrualTime = addDaysToDate(lastAccrual, daysWithoutCharges);
           const inDay = PLANS_IN_DAY[plan][variant];
-          const receivedInDay = ((amount * inDay) / 100);
+          const receivedInDay = (amount * inDay) / 100;
           const totalReceived = receivedInDay * daysWithoutCharges;
           const isDepositActive = charges + daysWithoutCharges < days;
 
           const transactionPromises = [];
 
           for (let i = 0; i < daysWithoutCharges; i++) {
-            transactionPromises.push(TransactionService.addTransaction({
-              type: "Начисления",
-              amount: receivedInDay,
-              executor: wallet,
-              status: "Выполнено",
-              nickname,
-              date: addDaysToDate(lastAccrual, i)
-            }))
+            transactionPromises.push(
+              TransactionService.addTransaction({
+                type: "Начисления",
+                amount: receivedInDay,
+                executor: wallet,
+                status: "Выполнено",
+                nickname,
+                date: addDaysToDate(lastAccrual, i),
+              }),
+            );
           }
 
-          Promise.all(transactionPromises)
+          Promise.all(transactionPromises);
 
           t.update(doc.ref, {
             charges: FieldValue.increment(daysWithoutCharges),
