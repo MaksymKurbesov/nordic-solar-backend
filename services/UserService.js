@@ -31,15 +31,16 @@ class UserService {
   }
 
   async addMoneyToBalance(nickname, wallet, amount) {
-    try {
-      const userRef = db.collection("users").doc(nickname);
-      await userRef.update({
-        [`wallets.${wallet}.available`]: FieldValue.increment(amount),
-        [`wallets.${wallet}.deposited`]: FieldValue.increment(amount),
-      });
-    } catch (error) {
-      throw new Error("Failed to add money on user balance.");
-    }
+     try {
+       const userRef = await db.collection("users").doc(nickname);
+       await userRef.update({
+         [`wallets.${wallet}.available`]: FieldValue.increment(amount),
+         [`wallets.${wallet}.deposited`]: FieldValue.increment(amount),
+       });
+     } catch (err) {
+       console.error('Ошибка в addMoneyToBalance:', err); // Логируем для отладки
+       throw new Error(`Ошибка в addMoneyToBalance: ${err.message}`); // Передаем ошибку дальше
+     }
   }
 
   async deductMoneyFromBalance(nickname, wallet, amount) {
@@ -50,8 +51,9 @@ class UserService {
         [`wallets.${wallet}.withdrawn`]: FieldValue.increment(amount),
         withdrawn: FieldValue.increment(amount),
       });
-    } catch (error) {
-      throw new Error("Failed to add money on user balance.");
+    } catch (err) {
+      console.error('Ошибка в deductMoneyFromBalance:', err); // Логируем для отладки
+      throw new Error(`Ошибка в deductMoneyFromBalance: ${err.message}`); // Передаем ошибку дальше
     }
   }
 

@@ -25,6 +25,8 @@ class TransactionController {
           userWallet,
         );
       }
+
+      res.json({ message: "Транзакция успешно добавлена!" });
     } catch (e) {
       res.status(500).json(e);
     }
@@ -37,17 +39,20 @@ class TransactionController {
       await TransactionService.confirmTransaction(id);
 
       if (type === "Пополнение") {
-        await UserService.addMoneyToBalance(nickname, executor, amount);
-        await UserService.addReferralRewards(nickname, executor, amount);
+        await UserService.addMoneyToBalance(nickname, executor, +amount);
+        await UserService.addReferralRewards(nickname, executor, +amount);
       }
 
       if (type === "Вывод") {
-        await UserService.deductMoneyFromBalance(nickname, executor, amount);
+        await UserService.deductMoneyFromBalance(nickname, executor, +amount);
       }
 
       res.json({ message: "Транзакция успешно подтверждена!" });
     } catch (e) {
-      res.status(500).json(e);
+      res.status(500).json({
+        message: "Транзакция не подтверждена",
+        error: e,
+      });
     }
   }
 
