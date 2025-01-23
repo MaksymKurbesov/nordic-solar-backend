@@ -25,6 +25,7 @@ class DepositService {
 
   async getDeposits(nickname) {
     await this.processEverydayDeposits(nickname);
+    await this.proccessOneTimeDeposits(nickname);
     const deposits = [];
     const depositsDoc = await db.collection("users").doc(nickname).collection("deposits").get();
 
@@ -33,6 +34,23 @@ class DepositService {
     });
 
     return deposits;
+  }
+
+  async proccessOneTimeDeposits(nickname) {
+    const userDoc = await db.collection("users").doc(nickname);
+    const oneTimeDeposits = userDoc
+      .collection("deposits")
+      .where("isActive", "==", true)
+      .where("accruals", "==", "one_time");
+
+    await db.runTransaction(async (t) => {
+      const docs = await t.get(oneTimeDeposits);
+      docs.forEach((doc) => {
+        const depositData = doc.data();
+
+        console.log(depositData.closeDate, "depositData.closeDate");
+      });
+    });
   }
 
   async processEverydayDeposits(nickname) {
