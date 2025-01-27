@@ -25,7 +25,7 @@ class DepositService {
 
   async getDeposits(nickname) {
     await this.processEverydayDeposits(nickname);
-    await this.proccessOneTimeDeposits(nickname);
+    await this.processOneTimeDeposits(nickname);
     const deposits = [];
     const depositsDoc = await db.collection("users").doc(nickname).collection("deposits").get();
 
@@ -36,7 +36,7 @@ class DepositService {
     return deposits;
   }
 
-  async proccessOneTimeDeposits(nickname) {
+  async processOneTimeDeposits(nickname) {
     const userDoc = await db.collection("users").doc(nickname);
     const oneTimeDeposits = userDoc
       .collection("deposits")
@@ -47,8 +47,41 @@ class DepositService {
       const docs = await t.get(oneTimeDeposits);
       docs.forEach((doc) => {
         const depositData = doc.data();
+        const { amount, plan, variant, lastAccrual, days, charges, wallet } = depositData;
+        const inDay = PLANS_IN_DAY[plan][variant];
 
-        console.log(depositData.closeDate, "depositData.closeDate");
+        const currentDate = new Date();
+        const closeDate = depositData.closeDate.toDate();
+
+        const isExpired = currentDate >= closeDate;
+
+        if (isExpired) {
+          TransactionService.addTransaction({
+            type: "Начисления",
+            amount: amount,
+            executor: wallet,
+            status: "Выполнено",
+            nickname,
+            date: depositData.closeDate,
+          });
+
+          const receivedInDay = (amount * inDay) / 100;
+          const totalReceived = receivedInDay * days;
+
+          t.update(doc.ref, {
+            charges: FieldValue.increment(1),
+            lastAccrual: depositData.closeDate,
+            isActive: false,
+            received: FieldValue.increment(totalReceived),
+          });
+
+          t.update(userDoc, {
+            earned: FieldValue.increment(totalReceived),
+            [`wallets.${wallet}.available`]: FieldValue.increment(totalReceived + amount),
+          });
+        }
+
+        console.log(isExpired, "isExpired");
       });
     });
   }
@@ -67,7 +100,9 @@ class DepositService {
         const docs = await t.get(everydayDeposits);
         docs.forEach((doc) => {
           const depositData = doc.data();
-          const { amount, plan, variant, lastAccrual, days, charges, wallet } = depositData;
+          const { amount, plan, variant, lastAccrual, days, charges, wallet, accruals } = depositData;
+
+          // if (accruals === 'one_time' || )
 
           const daysWithoutCharges = Math.min(calculateDaysSinceDate(lastAccrual), days - charges);
 
@@ -108,7 +143,7 @@ class DepositService {
 
           if (!isDepositActive) {
             t.update(userDoc, {
-              [`wallets.${wallet}.available`]: FieldValue.increment(amount),
+              [`wallets.${wallet}.available`]: FieldValue.increment(+amount),
             });
           }
         });
