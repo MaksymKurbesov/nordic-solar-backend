@@ -3,10 +3,10 @@ import mustache from "mustache";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 
 export const REFERRAL_REWARDS_BY_LEVEL = {
-  1: 10,
-  2: 7,
-  3: 5,
-  4: 3,
+  1: 8,
+  2: 6,
+  3: 4,
+  4: 2,
 };
 
 export const PLANS_IN_DAY = {
