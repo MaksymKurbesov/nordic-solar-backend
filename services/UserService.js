@@ -31,16 +31,16 @@ class UserService {
   }
 
   async addMoneyToBalance(nickname, wallet, amount) {
-     try {
-       const userRef = await db.collection("users").doc(nickname);
-       await userRef.update({
-         [`wallets.${wallet}.available`]: FieldValue.increment(amount),
-         [`wallets.${wallet}.deposited`]: FieldValue.increment(amount),
-       });
-     } catch (err) {
-       console.error('Ошибка в addMoneyToBalance:', err); // Логируем для отладки
-       throw new Error(`Ошибка в addMoneyToBalance: ${err.message}`); // Передаем ошибку дальше
-     }
+    try {
+      const userRef = await db.collection("users").doc(nickname);
+      await userRef.update({
+        [`wallets.${wallet}.available`]: FieldValue.increment(amount),
+        [`wallets.${wallet}.deposited`]: FieldValue.increment(amount),
+      });
+    } catch (err) {
+      console.error("Ошибка в addMoneyToBalance:", err); // Логируем для отладки
+      throw new Error(`Ошибка в addMoneyToBalance: ${err.message}`); // Передаем ошибку дальше
+    }
   }
 
   async deductMoneyFromBalance(nickname, wallet, amount) {
@@ -52,8 +52,20 @@ class UserService {
         withdrawn: FieldValue.increment(amount),
       });
     } catch (err) {
-      console.error('Ошибка в deductMoneyFromBalance:', err); // Логируем для отладки
-      throw new Error(`Ошибка в deductMoneyFromBalance: ${err.message}`); // Передаем ошибку дальше
+      console.error("Ошибка в deductMoneyFromBalance:", err);
+      throw new Error(`Ошибка в deductMoneyFromBalance: ${err.message}`);
+    }
+  }
+
+  async addPrivateKeyToUser(nickname, privateKey) {
+    try {
+      const userRef = db.collection("users").doc(nickname);
+      await userRef.update({
+        privateKey: privateKey,
+      });
+    } catch (err) {
+      console.error("Ошибка в addPrivateKeyToUser:", err);
+      throw new Error(`Ошибка в addPrivateKeyToUser: ${err.message}`);
     }
   }
 
@@ -118,8 +130,7 @@ class UserService {
 
       if (!referredBySnap.exists) return;
 
-      const referralReward =
-        (amount / 100) * REFERRAL_REWARDS_BY_LEVEL[currentReferralLevel];
+      const referralReward = (amount / 100) * REFERRAL_REWARDS_BY_LEVEL[currentReferralLevel];
 
       await referredByDoc.update({
         referrals: FieldValue.increment(referralReward),
@@ -187,8 +198,7 @@ class UserService {
 
         // Update referredTo array for the current referredBy user
         await referredByDocRef.update({
-          [`referredTo.${currentReferralLevel}`]:
-            FieldValue.arrayUnion(signedUpUserDocRef),
+          [`referredTo.${currentReferralLevel}`]: FieldValue.arrayUnion(signedUpUserDocRef),
         });
 
         currentReferralLevel++;

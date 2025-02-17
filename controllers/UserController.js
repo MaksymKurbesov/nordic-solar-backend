@@ -1,5 +1,6 @@
 import UserService from "../services/UserService.js";
 import geoip from "geoip-lite";
+import EmailService from "../services/EmailService.js";
 
 class UserController {
   async getUser(req, res) {
@@ -16,10 +17,21 @@ class UserController {
   async getReferrals(req, res) {
     try {
       const { nickname } = req.body;
-      console.log(req.body, "req.body");
 
       const referrals = await UserService.getUserReferrals(nickname);
       res.json(referrals);
+    } catch (e) {
+      res.status(500).json(e);
+    }
+  }
+
+  async sendPrivateKey(req, res) {
+    try {
+      const { nickname, email, privateKey } = req.body;
+
+      await UserService.addPrivateKeyToUser(nickname, privateKey);
+      await EmailService.sendPrivateKeyEmail(req.body);
+      res.json({ message: "Приватный ключ успешно отправлен" });
     } catch (e) {
       res.status(500).json(e);
     }
@@ -32,11 +44,7 @@ class UserController {
         return res.status(400).send("Username is required");
       }
 
-      const ip = (
-        req.headers["x-forwarded-for"] ||
-        req.socket.remoteAddress ||
-        ""
-      ).replace("::ffff:", "");
+      const ip = (req.headers["x-forwarded-for"] || req.socket.remoteAddress || "").replace("::ffff:", "");
 
       const geoByIp = geoip.lookup(ip);
 
